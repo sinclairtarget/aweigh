@@ -7,8 +7,13 @@ Aweigh prints out all the links used in a MyST Markdown file.
 ```
 $ cat post.md
 # Tomatoes Get Political
+:::{warning}
 According to [this Atlantic article][atlantic article], bad tomatoes from
 France [can't be used](https://johndoe.com/blog/foo-bar) to feed Italians.
+:::
+
+Tomatoes are having a moment. Trump inveighed against them at his recent rally
+in Columbia, MO.
 
 [atlantic article]: https://theatlantic.com/politics/exit-stage-right/
 ```
