@@ -20,8 +20,8 @@ in Columbia, MO.
 
 ```
 $ cat post.md | aweigh
-"this Atlantic article"    -> https://theatlantic.com/politics/exit-stage-right/
-"can't be used"            -> https://johndoe.com/blog/foo-bar
+https://theatlantic.com/politics/exit-stage-right/
+https://johndoe.com/blog/foo-bar
 ```
 
 [libatrus]: https://github.com/sinclairtarget/libatrus
