@@ -1,6 +1,9 @@
-//! This is a small CLI program that simply reads a MyST Markdown file
-//! (specified by path or piped to stdin), parses it, walks the AST, and prints
-//! out all links.
+//! This is a small CLI program that reads a MyST Markdown file (specified by
+//! path or piped to stdin), parses it, walks the AST, and prints out all
+//! link nodes.
+//!
+//! The link nodes are each printed as a JSON object, so the program outputs a
+//! series of JSON objects.
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -83,9 +86,10 @@ fn printLinks(alloc: Allocator, in: *Io.Reader, out: *Io.Writer) !void {
     std.debug.print("libatrus version: {s}\n", .{atrus.version});
 
     const root_node = try atrus.parse(alloc, in, .{ .parse_level = .post });
-    try handleNode(root_node, out);
+    try handleNode(root_node, out); // start depth-first traversal of AST
 }
 
+/// Recursively visit AST nodes, printing link nodes as JSON objects.
 fn handleNode(node: *atrus.ast.Node, out: *Io.Writer) !void {
     switch (node.tag) {
         inline .root, .paragraph, .block, .emphasis, .strong, .blockquote,
@@ -98,8 +102,10 @@ fn handleNode(node: *atrus.ast.Node, out: *Io.Writer) !void {
             }
         },
         .link => {
-            const n = node.payload.link;
-            try out.print("{s}\n", .{n.url});
+            // Let's print out the node as JSON, so we can see all fields and
+            // children.
+            try atrus.renderJSON(node, out, .{ .whitespace = .indent_4 });
+            _ = try out.write("\n");
         },
         else => return,
     }
