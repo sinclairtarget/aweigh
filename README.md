@@ -3,11 +3,11 @@ Aweigh is a little CLI program that demonstrates how to use [libatrus][] from
 Zig.
 
 Aweigh parses an input MyST file, adds the anchor emoji (⚓) to the beginning
-of the link text for any link node found in the AST, then renders the AST to
+of the link text for all link nodes found in the AST, then renders the AST to
 stdout as HTML.
 
 Check out [main.zig](./src/main.zig) for comments explaining all the relevant
-pieces of the code.
+pieces.
 
 ## Usage
 Given this file, named `post.md`:
