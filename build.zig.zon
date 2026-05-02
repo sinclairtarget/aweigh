@@ -33,8 +33,8 @@
     // internet connectivity.
     .dependencies = .{
         .atrus = .{
-            .url = "https://github.com/sinclairtarget/libatrus/archive/refs/tags/v0.3.0.tar.gz",
-            .hash = "atrus-0.3.0-SVSDElyLBwDa8WJGWZnjIXNFQFWej6SW7swInAI_6Tvk",
+            .url = "https://github.com/sinclairtarget/libatrus/archive/refs/tags/v0.4.0.tar.gz",
+            .hash = "atrus-0.4.0-SVSDEqVeBwBLw5-JQ_FHTKeqAVhX5uhVTA5TbqYuwpY4",
         },
     },
     .paths = .{
