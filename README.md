@@ -1,55 +1,109 @@
 # Aweigh
-Aweigh is a little CLI program that demonstrates how to use [libatrus][] from
+Aweigh is a little CLI program that shows how to use [libatrus][] from
 Zig.
 
-Aweigh prints out all the links used in a MyST Markdown file.
+Aweigh parses an input MyST file, adds the anchor emoji (⚓) to the beginning
+of the link text for any link node found in the AST, then renders the AST to
+stdout as JSON.
 
-Given this file:
-```
-$ cat post.md
+This demonstrates how to parse, transform, and render a MyST document with
+libatrus.
+
+## Usage
+Given this file, named `post.md`:
+```md post.md
 # Tomatoes Get Political
 :::{warning}
-According to [this Atlantic article][atlantic article], bad tomatoes from
-France [can't be used](https://johndoe.com/blog/foo-bar) to feed Italians.
+According to [this Atlantic article](https://theatlantic.com/foo), bad tomatoes
+from France can't be used to feed Italians.
 :::
 
-Tomatoes are having a moment. Trump inveighed against them at his recent rally
-in Columbia, MO.
-
-[atlantic article]: https://theatlantic.com/politics/exit-stage-right/
+Tomatoes are having [a moment](https://johndoe.com/blog/bar). Trump inveighed
+against them at his recent rally in Columbia, MO.
 ```
 
-Aweigh will output the following:
+You can run Aweigh like this: 
+
+```sh
+cat post.md | aweigh
 ```
-$ cat post.md | aweigh
+
+And see the following output:
+```json
 {
-    "type": "link",
-    "url": "https://theatlantic.com/politics/exit-state-right/",
-    "children": [
+  "type": "root",
+  "children": [
+    {
+      "type": "block",
+      "children": [
         {
-            "type": "text",
-            "value": "this Atlantic article"
-        }
-    ]
-}
-{
-    "type": "link",
-    "url": "https://johndoe.com/blog/foo-bar",
-    "children": [
+          "type": "heading",
+          "depth": 1,
+          "children": [
+            {
+              "type": "text",
+              "value": "Notes on Michel"
+            }
+          ]
+        },
         {
-            "type": "text",
-            "value": "can't be used"
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "On "
+            },
+            {
+              "type": "link",
+              "url": "https://sinclairtarget.com",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "⚓ "
+                },
+                {
+                  "type": "text",
+                  "value": "my personal website"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": ", you can find more\ninformation about Michel."
+            }
+          ]
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            {
+              "type": "text",
+              "value": "You should also check out the "
+            },
+            {
+              "type": "link",
+              "url": "https://github.com/sinclairtarget/libatrus",
+              "children": [
+                {
+                  "type": "text",
+                  "value": "⚓ "
+                },
+                {
+                  "type": "text",
+                  "value": "libatrus"
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "value": " repository."
+            }
+          ]
         }
-    ]
+      ]
+    }
+  ]
 }
-```
-
-To get just the URLs, you could always pipe the output to [jq][]:
-```
-$ cat post.md | aweigh | jq -r .url
-https://theatlantic.com/politics/exit-stage-right/
-https://johndoe.com/blog/foo-bar
 ```
 
 [libatrus]: https://github.com/sinclairtarget/libatrus
-[jq]: https://jqlang.org/

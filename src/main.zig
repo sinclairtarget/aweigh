@@ -1,9 +1,6 @@
 //! This is a small CLI program that reads a MyST Markdown file (specified by
-//! path or piped to stdin), parses it, walks the AST, and prints out all
-//! link nodes.
-//!
-//! The link nodes are each printed as a JSON object, so the program outputs a
-//! series of JSON objects.
+//! path or piped to stdin), parses it, transforms the AST by adding the anchor
+//! emoji to all link text, then renders everything out as JSON.
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -58,8 +55,32 @@ pub fn main() !void {
     var reader_impl = file.reader(&input_buffer);
     const reader = &reader_impl.interface;
 
-    // Parse document and print links
-    try printLinks(allocator, reader, stdout);
+    std.debug.print("libatrus version: {s}\n", .{atrus.version});
+
+    // Parse MyST document.
+    var root_node = try atrus.parse(allocator, reader, .{
+        // Here we specify a parse level of "pre", overriding the default parse
+        // level of "post". This gives us access to the AST before the standard
+        // post-processing transforms have been applied. We make a call to
+        // `atrus.transform()` below to apply those transforms after we've made
+        // our modification to the AST.
+        .parse_level = .pre,
+    });
+
+    // Custom transform operation on the AST.
+    // We do our custom transformation here before calling `atrus.transform()`.
+    // We do this because we are inserting nodes into the AST here but still
+    // want those nodes to be processed by the standard transformations.
+    root_node = try myCustomTransform(allocator, root_node);
+
+    // This applies the remaining standard transformations on the AST (e.g.
+    // resolving of references, unwrapping of directives/roles).
+    root_node = try atrus.transform(allocator, root_node, .{});
+
+    // This renders the AST as JSON.
+    try atrus.renderJSON(root_node, stdout, .{ .whitespace = .indent_2 });
+    _ = try stdout.write("\n");
+
     try stdout.flush();
 }
 
@@ -82,31 +103,46 @@ fn die(comptime fmt: []const u8, args: anytype) noreturn {
     std.process.exit(1);
 }
 
-fn printLinks(alloc: Allocator, in: *Io.Reader, out: *Io.Writer) !void {
-    std.debug.print("libatrus version: {s}\n", .{atrus.version});
+/// Here, we an extra text node as the first child of all link nodes found in
+/// the AST.
+fn myCustomTransform(
+    alloc: Allocator,
+    node: *atrus.ast.Node,
+) !*atrus.ast.Node {
+    const anchor_prefix = "⚓ ";
 
-    const root_node = try atrus.parse(alloc, in, .{ .parse_level = .post });
-    try handleNode(root_node, out); // start depth-first traversal of AST
-}
+    switch (node.*) {
+        .link => |*n| {
+            // Create new text node.
+            const text_node = try alloc.create(atrus.ast.Node);
+            text_node.* = .{
+                .text = .{
+                    // All strings in the AST must be null-terminated.
+                    .value = try alloc.dupeZ(u8, anchor_prefix),
+                },
+            };
 
-/// Recursively visit AST nodes, printing link nodes as JSON objects.
-fn handleNode(node: *atrus.ast.Node, out: *Io.Writer) !void {
-    switch (node.tag) {
-        inline .root, .paragraph, .block, .emphasis, .strong, .blockquote,
-        .subscript, .superscript, .admonition_title, .caption, .myst_directive,
-        .myst_role, .container, .admonition => |node_type| {
-            const n = @field(node.payload, @tagName(node_type));
-            const sliced = n.children[0..n.n_children];
-            for (sliced) |child| {
-                try handleNode(child, out);
+            // Create new slice holding the existing children plus the new one.
+            const new_len = n.children.len + 1;
+            const new_children = try alloc.alloc(*atrus.ast.Node, new_len);
+            new_children[0] = text_node;
+            for (n.children, 1..) |child, i| {
+                new_children[i] = child;
+            }
+
+            // Replace the old slice.
+            alloc.free(n.children);
+            n.children = new_children;
+        },
+        inline .root, .block, .paragraph, .myst_directive, .container,
+        .admonition => |*n| {
+            // For nodes with children, apply transformation recursively.
+            for (n.children, 0..) |child, i| {
+                n.children[i] = try myCustomTransform(alloc, child);
             }
         },
-        .link => {
-            // Let's print out the node as JSON, so we can see all fields and
-            // children.
-            try atrus.renderJSON(node, out, .{ .whitespace = .indent_4 });
-            _ = try out.write("\n");
-        },
-        else => return,
+        else => {}, // Ignore all other nodes.
     }
+
+    return node;
 }
