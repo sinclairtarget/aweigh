@@ -25,7 +25,7 @@ against them at his recent rally in Columbia, MO.
 You can run Aweigh like this: 
 
 ```sh
-cat post.md | aweigh
+cat post.md | zig build run 
 ```
 
 And see the following output:
