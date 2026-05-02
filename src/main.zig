@@ -9,7 +9,7 @@ const Io = std.Io;
 const atrus = @import("atrus");
 
 pub fn main() !void {
-    // Set up stdout and allocator
+    // Set up stdout and allocator. Standard Zig stuff.
     var stdout_buffer: [1024]u8 = undefined;
     var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
     const stdout = &stdout_writer.interface;
@@ -18,7 +18,7 @@ pub fn main() !void {
     defer arena.deinit();
     const allocator = arena.allocator();
 
-    // Process CLI args
+    // Process CLI args. Standard Zig stuff.
     const args = try std.process.argsAlloc(allocator);
     if (args.len > 2) {
         printUsage();
@@ -33,7 +33,11 @@ pub fn main() !void {
         }
     }
 
-    // Set up reader for input file
+    // Set up reader for input file. `atrus.parse()` below takes an *Io.Reader
+    // and not a string as input.
+    //
+    // Here we create an input stream that points to either stdin or the named
+    // file on disk, depending on the args passed.
     const file = blk: {
         if (args.len > 1) {
             const filepath = args[1];
@@ -55,6 +59,7 @@ pub fn main() !void {
     var reader_impl = file.reader(&input_buffer);
     const reader = &reader_impl.interface;
 
+    // Print library version.
     std.debug.print("libatrus version: {s}\n", .{atrus.version});
 
     // Parse MyST document.
@@ -102,8 +107,8 @@ fn die(comptime fmt: []const u8, args: anytype) noreturn {
     std.process.exit(1);
 }
 
-/// Here, we an extra text node as the first child of all link nodes found in
-/// the AST.
+/// In our custom transform, we add an extra text node as the first child of
+/// all link nodes found in the AST.
 fn myCustomTransform(
     alloc: Allocator,
     node: *atrus.ast.Node,
@@ -116,7 +121,8 @@ fn myCustomTransform(
             const text_node = try alloc.create(atrus.ast.Node);
             text_node.* = .{
                 .text = .{
-                    // All strings in the AST must be null-terminated.
+                    // All strings in the AST must be null-terminated. This
+                    // makes them C-ABI-compatible.
                     .value = try alloc.dupeZ(u8, anchor_prefix),
                 },
             };
