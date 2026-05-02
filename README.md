@@ -1,13 +1,13 @@
 # Aweigh
-Aweigh is a little CLI program that shows how to use [libatrus][] from
+Aweigh is a little CLI program that demonstrates how to use [libatrus][] from
 Zig.
 
 Aweigh parses an input MyST file, adds the anchor emoji (⚓) to the beginning
 of the link text for any link node found in the AST, then renders the AST to
-stdout as JSON.
+stdout as HTML.
 
-This demonstrates how to parse, transform, and render a MyST document with
-libatrus.
+Check out [main.zig](./src/main.zig) for comments explaining all the relevant
+pieces of the code.
 
 ## Usage
 Given this file, named `post.md`:
@@ -29,81 +29,15 @@ cat post.md | aweigh
 ```
 
 And see the following output:
-```json
-{
-  "type": "root",
-  "children": [
-    {
-      "type": "block",
-      "children": [
-        {
-          "type": "heading",
-          "depth": 1,
-          "children": [
-            {
-              "type": "text",
-              "value": "Notes on Michel"
-            }
-          ]
-        },
-        {
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "value": "On "
-            },
-            {
-              "type": "link",
-              "url": "https://sinclairtarget.com",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "⚓ "
-                },
-                {
-                  "type": "text",
-                  "value": "my personal website"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "value": ", you can find more\ninformation about Michel."
-            }
-          ]
-        },
-        {
-          "type": "paragraph",
-          "children": [
-            {
-              "type": "text",
-              "value": "You should also check out the "
-            },
-            {
-              "type": "link",
-              "url": "https://github.com/sinclairtarget/libatrus",
-              "children": [
-                {
-                  "type": "text",
-                  "value": "⚓ "
-                },
-                {
-                  "type": "text",
-                  "value": "libatrus"
-                }
-              ]
-            },
-            {
-              "type": "text",
-              "value": " repository."
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+```html
+<h1>Tomatoes Get Political</h1>
+<aside class="admonition warning">
+  <p class="admonition-title">Warning</p>
+  <p>According to <a href="https://theatlantic.com/foo">⚓ this Atlantic article</a>, bad tomatoes
+from France can't be used to feed Italians.</p>
+</aside>
+<p>Tomatoes are having <a href="https://johndoe.com/blog/bar">⚓ a moment</a>. Trump inveighed
+against them at his recent rally in Columbia, MO.</p>
 ```
 
 [libatrus]: https://github.com/sinclairtarget/libatrus

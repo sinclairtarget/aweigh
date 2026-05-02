@@ -1,6 +1,6 @@
 //! This is a small CLI program that reads a MyST Markdown file (specified by
 //! path or piped to stdin), parses it, transforms the AST by adding the anchor
-//! emoji to all link text, then renders everything out as JSON.
+//! emoji to all link text, then renders everything out as HTML.
 
 const std = @import("std");
 const Allocator = std.mem.Allocator;
@@ -77,9 +77,8 @@ pub fn main() !void {
     // resolving of references, unwrapping of directives/roles).
     root_node = try atrus.transform(allocator, root_node, .{});
 
-    // This renders the AST as JSON.
-    try atrus.renderJSON(root_node, stdout, .{ .whitespace = .indent_2 });
-    _ = try stdout.write("\n");
+    // This renders the AST as HTML.
+    try atrus.renderHTML(root_node, stdout, .{});
 
     try stdout.flush();
 }
