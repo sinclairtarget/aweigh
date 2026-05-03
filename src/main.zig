@@ -115,38 +115,54 @@ fn myCustomTransform(
 ) !*atrus.ast.Node {
     const anchor_prefix = "⚓ ";
 
-    switch (node.*) {
-        .link => |*n| {
-            // Create new text node.
-            const text_node = try alloc.create(atrus.ast.Node);
-            text_node.* = .{
-                .text = .{
-                    // All strings in the AST must be null-terminated. This
-                    // makes them C-ABI-compatible.
-                    .value = try alloc.dupeZ(u8, anchor_prefix),
-                },
-            };
+    // Here we use a fancy Zig-ism that allows us to divide our node type union
+    // into disjoint sets of node types along some dimension. In this case, we
+    // want to handle nodes with children differently from nodes without
+    // children.
+    //
+    // See https://mitchellh.com/writing/zig-comptime-tagged-union-subset for
+    // more on this pattern.
+    switch (node.hasChildren()) {
+        .no => {}, // Ignore all leaf nodes.
+        .yes => |branch_node| switch (branch_node) {
+            // This switch is exaustive over only those node types that can
+            // have children.
+            .link => |n| {
+                // Create new text node.
+                const text_node = try alloc.create(atrus.ast.Node);
+                text_node.* = .{
+                    .text = .{
+                        // All strings in the AST must be null-terminated.
+                        // This makes them C-ABI-compatible.
+                        .value = try alloc.dupeZ(u8, anchor_prefix),
+                    },
+                };
 
-            // Create new slice holding the existing children plus the new one.
-            const new_len = n.children.len + 1;
-            const new_children = try alloc.alloc(*atrus.ast.Node, new_len);
-            new_children[0] = text_node;
-            for (n.children, 1..) |child, i| {
-                new_children[i] = child;
-            }
+                // Create new slice holding the existing children plus the
+                // new one.
+                const new_len = n.children.len + 1;
+                const new_children = try alloc.alloc(
+                    *atrus.ast.Node,
+                    new_len,
+                );
+                new_children[0] = text_node;
+                for (n.children, 1..) |child, i| {
+                    new_children[i] = child;
+                }
 
-            // Replace the old slice.
-            alloc.free(n.children);
-            n.children = new_children;
-        },
-        inline .root, .block, .paragraph, .myst_directive, .container,
-        .admonition => |*n| {
-            // For nodes with children, apply transformation recursively.
-            for (n.children, 0..) |child, i| {
-                n.children[i] = try myCustomTransform(alloc, child);
+                // Replace the old slice.
+                alloc.free(n.children);
+                n.children = new_children;
+            },
+            // "inline else" is one way Zig does compile-time polymorphism.
+            inline else => |n| {
+                // For nodes with children, apply transformation
+                // recursively.
+                for (n.children, 0..) |child, i| {
+                    n.children[i] = try myCustomTransform(alloc, child);
+                }
             }
         },
-        else => {}, // Ignore all other nodes.
     }
 
     return node;
